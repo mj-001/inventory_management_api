@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     #your app is called inventory
-    'inventory'
+    'inventory',
 ]
 
 MIDDLEWARE = [
