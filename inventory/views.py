@@ -3,8 +3,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import InventoryItem
-from .serializers import InventoryItemSerializer, UserSerializer
+from .serializers import InventoryItemSerializer
+from .serializers import UserSerializer
 from rest_framework.permissions import IsAuthenticated
+from django.http import HttpResponse
+
+class HomeView(APIView):
+    def get(self, request):
+        return HttpResponse("<h1>Welcome to the Inventory Management API</h1>")
 
 
 class InventoryListView(APIView):

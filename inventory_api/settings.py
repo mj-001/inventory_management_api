@@ -41,6 +41,10 @@ INSTALLED_APPS = [
     'inventory',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
+
+    # Required for serving Swagger UI 
+    'drf_yasg',
 
 ]
 
@@ -108,7 +112,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en-uk'
 
 TIME_ZONE = 'UTC'
 
@@ -128,10 +132,24 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
+    'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',  # Token-based authentication
         # 'rest_framework.authentication.SessionAuthentication',  # You can also use session-based authentication (optional)
         # 'rest_framework_simplejwt.authentication.JWTAuthentication',  # For JWT authentication
+    ),
+    'DEFAULT_PERMISSION_CLASSES':(
+        'rest_framework.permissions.IsAuthenticated', 
+    ),
+    'DEFAULT_FILTER_BACKENDS':(
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
 
-    ],
+    'DEFAULT_PAGINATION_CLASS':(
+        'rest_framework.pagination.PageNumberPagination',
+    ),
+    'PAGE_SIZE':( 10,
+    ),
+
 }
+
+
