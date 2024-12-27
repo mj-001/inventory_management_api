@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-1nr@2=sw07k-z8#!r_mfjpxfic0q+fd(esbor+42$qsf4plg6k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']  # Allows all hosts (not secure)
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000/']
 
 
 # Application definition
@@ -42,6 +43,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
+    'allauth',
+    'allauth.account',
+    
 
     # Required for serving Swagger UI 
     'drf_yasg',
@@ -56,6 +60,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    'allauth.account.middleware.AccountMiddleware', # Allauth
 ]
 
 ROOT_URLCONF = 'inventory_api.urls'
@@ -132,10 +138,8 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',  # Token-based authentication
-        # 'rest_framework.authentication.SessionAuthentication',  # You can also use session-based authentication (optional)
-        # 'rest_framework_simplejwt.authentication.JWTAuthentication',  # For JWT authentication
+    'DEFAULT_AUTHENTICATION_CLASSES': (        
+        'rest_framework.authentication.TokenAuthentication',    
     ),
     'DEFAULT_PERMISSION_CLASSES':(
         'rest_framework.permissions.IsAuthenticated', 

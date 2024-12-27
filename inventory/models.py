@@ -1,7 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import PermissionsMixin, User
 from django_filters.rest_framework import FilterSet
 from django_filters.rest_framework import filters
+from django.contrib.auth.views import LoginView
 
 # Create your models here.
 class InventoryItem(models.Model):
@@ -13,11 +14,13 @@ class InventoryItem(models.Model):
     date_added = models.DateTimeField(auto_created=True, null=True)
     last_updated_period=models.DateTimeField(auto_now=True, null=True)
     managed_by=models.ForeignKey(User,on_delete=models.CASCADE, null=True)
+    low_stock_alert=models.IntegerField(default=0,null=True)
 
     def __str__(self):
         return self.name
     
-    """this is experimantal
+    """
+    this is experimantal
     def filter_thresholds(quantity):
         if quantity <= 2:
             return f"Quantity is less than {quantity}"
@@ -28,7 +31,7 @@ class InventoryFilter(FilterSet):
     category=filters.CharFilter(lookup_expr='icontains')
     price_min=filters.NumberFilter(field_name='price',lookup_expr='gte')
     price_max=filters.NumberFilter(field_name='price',lookup_expr='lte')
-    low_stock=filters.BooleanFilter(method='filter_low_stock')
+    low_stock=filters.BooleanFilter(field_name='low_stock_alert')
     
     def filter_low_stock(querySet,name,value, quantity):
         if value:
@@ -44,3 +47,4 @@ class InventoryChangeLog(models.Model):
     time_changed=models.DateTimeField(auto_now_add=True)
     changed_quantities=models.IntegerField(null=False)
     
+
