@@ -14,7 +14,7 @@ class InventoryItem(models.Model):
     date_added = models.DateTimeField(auto_created=True, null=True)
     last_updated_period=models.DateTimeField(auto_now=True, null=True)
     managed_by=models.ForeignKey(User,on_delete=models.CASCADE, null=True)
-    low_stock_alert=models.IntegerField(default=0,null=True)
+    #low_stock_alert=models.IntegerField(default=0,null=True)
 
     def __str__(self):
         return self.name

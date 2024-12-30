@@ -14,15 +14,15 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.shortcuts import HttpResponse
-from django.urls import path, include
-from .views import InventoryListView, HomeView, LoginPageView, ProfileView
+from django.urls import path
+from .views import HomeView, LoginPageView, ProfileView, getInventoryListView, postInventoryListView
 from .views import UserRegistrationView
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from .views import LogoutView
+from . import views
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -41,13 +41,16 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('', HomeView, name='home'),
-    path('api/items/', InventoryListView.as_view(), name='inventory-list'),
-    path('api/items/create/', InventoryListView.as_view(), name='inventory-create'),
+    path('api/items/', getInventoryListView, name='inventory-list'),
+    path('api/items/create/', postInventoryListView, name='inventory-create'),
     path('register/', UserRegistrationView, name='register'),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),  # Route for getting the token
     path('login/', LoginPageView, name='login'),
     path('logout/', LogoutView, name='logout'),
     path('profile/', ProfileView, name='profile'),
+    path('inventory/<int:pk>/', views.inventory_detail, name='inventory_detail'),
+    path('inventory/<int:pk>/update_quantity/', views.update_quantity, name='update_quantity'),
+    path('change-log/', views.change_log, name='change_log'),
 
     # paths for ui generated documentation
     path('doc/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

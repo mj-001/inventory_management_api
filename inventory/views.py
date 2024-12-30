@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import InventoryItem
+from .models import InventoryItem, InventoryChangeLog
 from .serializers import InventoryItemSerializer, LoginSerializer, UserSerializer, UserProfileSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.http import HttpResponse
@@ -13,22 +13,97 @@ from rest_framework.authtoken.models import Token
 def HomeView(request):
     return HttpResponse("Welcome to the Inventory Management API")
 
-class InventoryListView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
-    
-    def get(self, request):
-        items = InventoryItem.objects.all()
-        serializer = InventoryItemSerializer(items, many=True)
+
+# Existing class-based view for listing and creating inventory items
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def getInventoryListView(request):
+    items = InventoryItem.objects.all()
+    serializer = InventoryItemSerializer(items, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def postInventoryListView(request):
+    serializer = InventoryItemSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# New function-based view for detailed inventory management (retrieve, update, delete)
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def inventory_detail(request, pk):
+    """
+    Retrieve, update, or delete a specific inventory item.
+    """
+    try:
+        item = InventoryItem.objects.get(pk=pk, user=request.user)
+    except InventoryItem.DoesNotExist:
+        return Response({'error': 'Item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = InventoryItemSerializer(item)
         return Response(serializer.data)
 
-    def post(self, request):
-        serializer = InventoryItemSerializer(data=request.data)
+    elif request.method == 'PUT':
+        serializer = InventoryItemSerializer(item, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    elif request.method == 'DELETE':
+        item.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# New function-based view for updating inventory quantities
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def update_quantity(request, pk):
+    """
+    Update the quantity of an inventory item.
+    """
+    try:
+        item = InventoryItem.objects.get(pk=pk, user=request.user)
+    except InventoryItem.DoesNotExist:
+        return Response({'error': 'Item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    added = int(request.data.get('added', 0))
+    removed = int(request.data.get('removed', 0))
+    item.quantity += added - removed
+    item.save()
+
+    # Log the change
+    InventoryChangeLog.objects.create(
+        inventory_item=item,
+        added=added,
+        removed=removed,
+        user=request.user
+    )
+
+    return Response({'message': 'Quantity updated successfully'}, status=status.HTTP_200_OK)
+
+
+# New function-based view for viewing change logs
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def change_log(request):
+    """
+    View the change log for all inventory items.
+    """
+    logs = InventoryChangeLog.objects.filter(user=request.user)
+    serializer = InventoryChangeLogSerializer(logs, many=True)
+    return Response(serializer.data)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def UserRegistrationView(request):
@@ -87,7 +162,7 @@ def ProfileView(request):
 def LogoutView(request):
     # Check if the user has an auth token
     if request.user.auth_token:
-        request.user.auth_token.deactivate()  # Deactivate the token
+        request.user.auth_token.delete()  # Deactivate the token
         return Response({"detail": "Successfully logged out"}, status=status.HTTP_200_OK)
     return Response({"detail": "No active session found"}, status=status.HTTP_400_BAD_REQUEST)
     
