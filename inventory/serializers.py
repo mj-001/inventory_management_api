@@ -63,3 +63,14 @@ class UserSerializer(serializers.ModelSerializer):
             last_name=validated_data.get('last_name', '')
         )
         return user
+    
+
+class InventoryChangeLogSerializer(serializers.Serializer):
+    """
+    Serializer specifically for history field in item_history.
+    """
+    field = serializers.CharField()
+    old_value = serializers.CharField()
+    new_value = serializers.CharField()
+    changed_by = serializers.CharField()
+    timestamp = serializers.DateTimeField()

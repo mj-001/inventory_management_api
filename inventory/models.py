@@ -1,8 +1,9 @@
+from django.utils import timezone
 from django.db import models
-from django.contrib.auth.models import PermissionsMixin, User
+from django.contrib.auth.models import User
 from django_filters.rest_framework import FilterSet
 from django_filters.rest_framework import filters
-from django.contrib.auth.views import LoginView
+import json
 
 # Create your models here.
 class InventoryItem(models.Model):
@@ -15,6 +16,55 @@ class InventoryItem(models.Model):
     last_updated_period=models.DateTimeField(auto_now=True, null=True)
     managed_by=models.ForeignKey(User,on_delete=models.CASCADE, null=True)
     #low_stock_alert=models.IntegerField(default=0,null=True)
+    inventory_item_history = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+    def append_to_history(self, field_name, old_value, new_value, user):
+        """
+        Appends a change to the history field in JSON format.
+        """
+        change = {
+            'field': field_name,
+            'old_value': old_value,
+            'new_value': new_value,
+            'changed_by': user.username,
+            'timestamp': timezone.now().isoformat()  # Use timezone.now() from django.utils
+        }
+
+        # If the history already exists, append to it; otherwise, start a new history
+        if self.inventory_item_history:  # Ensure to use 'inventory_item_history' instead of 'history'
+            history_data = json.loads(self.inventory_item_history)  # Load existing history
+        else:
+            history_data = []
+
+        history_data.append(change)  # Append the new change
+
+        # Update the history field with the new data
+        self.inventory_item_history = json.dumps(history_data)
+
+
+    def save(self, *args, **kwargs):
+        """
+        Override save method to track changes and update history.
+        """
+        if self.pk:  # If the instance already exists (i.e., it is being updated)
+            original = InventoryItem.objects.get(pk=self.pk)
+            
+            # Track changes for each field
+            if self.name != original.name:
+                self.append_to_history('name', original.name, self.name, self.managed_by)
+            if self.description != original.description:
+                self.append_to_history('description', original.description, self.description, self.managed_by)
+            if self.price != original.price:
+                self.append_to_history('price', original.price, self.price, self.managed_by)
+            if self.quantity != original.quantity:
+                self.append_to_history('quantity', original.quantity, self.quantity, self.managed_by)
+            if self.category != original.category:
+                self.append_to_history('category', original.category, self.category, self.managed_by)
+
+        super().save(*args, **kwargs)  # Call the original save method
 
     def __str__(self):
         return self.name

@@ -1,9 +1,10 @@
+import json
 from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import InventoryItem, InventoryChangeLog
-from .serializers import InventoryItemSerializer, LoginSerializer, UserSerializer, UserProfileSerializer
+from .serializers import InventoryChangeLogSerializer, InventoryItemSerializer, LoginSerializer, UserSerializer, UserProfileSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -44,7 +45,7 @@ def inventory_detail(request, pk):
     Retrieve, update, or delete a specific inventory item.
     """
     try:
-        item = InventoryItem.objects.get(pk=pk, user=request.user)
+        item = InventoryItem.objects.get(pk=pk, managed_by=request.user)
     except InventoryItem.DoesNotExist:
         return Response({'error': 'Item not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -68,29 +69,41 @@ def inventory_detail(request, pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @authentication_classes([TokenAuthentication])
-def update_quantity(request, pk):
+def update_quantity(request, item_id):
     """
-    Update the quantity of an inventory item.
+    Update the quantity of an inventory item and log the change.
     """
     try:
-        item = InventoryItem.objects.get(pk=pk, user=request.user)
+        # Retrieve the inventory item based on the pk and ensure it belongs to the current user
+        item = InventoryItem.objects.get(pk=item_id, managed_by=request.user)
+
+        # Get the 'added' and 'removed' quantities from the request data
+        added = int(request.data.get('added', 0))  # Default to 0 if not provided
+        removed = int(request.data.get('removed', 0))  # Default to 0 if not provided
+
+        # Update the quantity (ensure that quantity doesn't go negative)
+        new_quantity = item.quantity + added - removed
+        if new_quantity < 0:
+            return Response({'error': 'Quantity cannot be negative'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save the updated quantity to the inventory item
+        item.quantity = new_quantity
+        item.save()
+
+        # Log the change in the InventoryChangeLog
+        InventoryChangeLog.objects.create(
+            item=item,
+            changed_by=request.user,
+            changed_quantities=(added - removed),  # The net change in quantity
+        )
+
+        return Response({
+            'message': 'Quantity updated successfully',
+            'new_quantity': item.quantity
+        }, status=status.HTTP_200_OK)
+
     except InventoryItem.DoesNotExist:
         return Response({'error': 'Item not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    added = int(request.data.get('added', 0))
-    removed = int(request.data.get('removed', 0))
-    item.quantity += added - removed
-    item.save()
-
-    # Log the change
-    InventoryChangeLog.objects.create(
-        inventory_item=item,
-        added=added,
-        removed=removed,
-        user=request.user
-    )
-
-    return Response({'message': 'Quantity updated successfully'}, status=status.HTTP_200_OK)
 
 
 # New function-based view for viewing change logs
@@ -156,7 +169,7 @@ def ProfileView(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])  # Corrected to POST
+@api_view(['POST'])  
 @permission_classes([IsAuthenticated])
 @authentication_classes([TokenAuthentication])
 def LogoutView(request):
@@ -165,4 +178,34 @@ def LogoutView(request):
         request.user.auth_token.delete()  # Deactivate the token
         return Response({"detail": "Successfully logged out"}, status=status.HTTP_200_OK)
     return Response({"detail": "No active session found"}, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def inventory_item_history(request, item_id):
+    """
+    Get the history of changes for a specific inventory item.
+    """
+    try:
+        # Retrieve the inventory item based on the item_id and ensure the item belongs to the current user
+        item = InventoryItem.objects.get(pk=item_id, managed_by=request.user)
+
+        # Check if the item has a history
+        if item.inventory_item_history:
+            # Load the history data from the JSON field
+            history_data = json.loads(item.inventory_item_history)
+        else:
+            history_data = []
+
+        # Return the history in the response
+        return Response({
+            'item_id': item.id,
+            'item_name': item.name,
+            'history': history_data
+        })
+    except InventoryItem.DoesNotExist:
+        return Response({'error': 'Item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+

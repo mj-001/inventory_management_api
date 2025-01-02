@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .views import HomeView, LoginPageView, ProfileView, getInventoryListView, postInventoryListView
+from .views import HomeView, LoginPageView, ProfileView, getInventoryListView, inventory_item_history, postInventoryListView
 from .views import UserRegistrationView
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework import permissions
@@ -40,17 +40,18 @@ schema_view = get_schema_view(
     
 
 urlpatterns = [
-    path('', HomeView, name='home'),
-    path('api/items/', getInventoryListView, name='inventory-list'),
-    path('api/items/create/', postInventoryListView, name='inventory-create'),
-    path('register/', UserRegistrationView, name='register'),
+    path('', HomeView, name='home'), # this is tested and works
+    path('api/items/', getInventoryListView, name='inventory-list'), # this is tested and works
+    path('api/items/create/', postInventoryListView, name='inventory-create'), # this is tested and works
+    path('register/', UserRegistrationView, name='register'), # this is tested and works
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),  # Route for getting the token
-    path('login/', LoginPageView, name='login'),
-    path('logout/', LogoutView, name='logout'),
+    path('login/', LoginPageView, name='login'), # this is tested and works
+    path('logout/', LogoutView, name='logout'), 
     path('profile/', ProfileView, name='profile'),
-    path('inventory/<int:pk>/', views.inventory_detail, name='inventory_detail'),
-    path('inventory/<int:pk>/update_quantity/', views.update_quantity, name='update_quantity'),
+    path('inventory/<int:pk>/', views.inventory_detail, name='inventory_detail'), # this is tested and works
+    path('inventory/<int:item_id>/update_quantity/', views.update_quantity, name='update_quantity'), # this is tested and works
     path('change-log/', views.change_log, name='change_log'),
+    path('inventory/<int:item_id>/history/', inventory_item_history, name='inventory_item_history'), # this is tested and works
 
     # paths for ui generated documentation
     path('doc/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
