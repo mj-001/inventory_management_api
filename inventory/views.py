@@ -114,9 +114,33 @@ def change_log(request):
     """
     View the change log for all inventory items.
     """
-    logs = InventoryChangeLog.objects.filter(user=request.user)
-    serializer = InventoryChangeLogSerializer(logs, many=True)
+    # Retrieve change logs for the authenticated user
+    logs = InventoryChangeLog.objects.filter(changed_by=request.user)
+
+    # If no logs exist, return a 404 response
+    if not logs.exists():
+        return Response({'error': 'No change logs found for this user.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Manually format the logs to match the serializer's expected fields
+    formatted_logs = []
+    for log in logs:
+        formatted_log = {
+            'field': 'quantity',  # We assume the change is for quantity in this case
+            'old_value': log.item.quantity,  # Old value of the inventory item's quantity
+            'new_value': log.changed_quantities,  # New value of the changed quantity
+            'changed_by': log.changed_by.username if log.changed_by else 'Unknown',  # Username of the person who made the change
+            'timestamp': log.time_changed.isoformat()  # Timestamp of the change
+        }
+        formatted_logs.append(formatted_log)
+
+    # Serialize the formatted logs
+    serializer = InventoryChangeLogSerializer(formatted_logs, many=True)
+
     return Response(serializer.data)
+
+
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def UserRegistrationView(request):

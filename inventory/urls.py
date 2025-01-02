@@ -46,11 +46,11 @@ urlpatterns = [
     path('register/', UserRegistrationView, name='register'), # this is tested and works
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),  # Route for getting the token
     path('login/', LoginPageView, name='login'), # this is tested and works
-    path('logout/', LogoutView, name='logout'), 
-    path('profile/', ProfileView, name='profile'),
+    path('logout/', LogoutView, name='logout'), # this is tested and works
+    path('profile/', ProfileView, name='profile'), # this is tested and works
     path('inventory/<int:pk>/', views.inventory_detail, name='inventory_detail'), # this is tested and works
     path('inventory/<int:item_id>/update_quantity/', views.update_quantity, name='update_quantity'), # this is tested and works
-    path('change-log/', views.change_log, name='change_log'),
+    path('change-log/', views.change_log, name='change_log'), # this is tested and works
     path('inventory/<int:item_id>/history/', inventory_item_history, name='inventory_item_history'), # this is tested and works
 
     # paths for ui generated documentation
