@@ -40,12 +40,12 @@ def postInventoryListView(request):
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 @authentication_classes([TokenAuthentication])
-def inventory_detail(request, id):
+def inventory_detail(request, pk):
     """
     Retrieve, update, or delete a specific inventory item.
     """
     try:
-        item = InventoryItem.objects.get(pk=id, managed_by=request.user)
+        item = InventoryItem.objects.get(pk=pk)
     except InventoryItem.DoesNotExist:
         return Response({'error': 'Item not found'}, status=status.HTTP_404_NOT_FOUND)
 
