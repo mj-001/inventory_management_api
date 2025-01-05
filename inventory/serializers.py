@@ -5,7 +5,7 @@ from .models import InventoryItem
 class InventoryItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = InventoryItem
-        fields = ['id', 'name', 'description', 'price', 'quantity']
+        fields = ['id', 'name', 'description', 'price', 'quantity', 'managed_by']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
